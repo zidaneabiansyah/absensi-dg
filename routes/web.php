@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,4 +36,13 @@ Route::middleware('auth')->group(function () {
 
     // Student Management
     Route::resource('students', StudentController::class);
+
+    // Semester Management
+    Route::resource('semesters', SemesterController::class)->except(['show']);
+
+    // Attendance Management
+    Route::resource('attendances', AttendanceController::class)->except(['show']);
+
+    // Reports
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 });
