@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\StudentsExport;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\ClassModel;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
@@ -119,5 +121,21 @@ class StudentController extends Controller
         return redirect()
             ->route('students.index')
             ->with('success', 'Siswa berhasil dihapus');
+    }
+
+    /**
+     * Export students to Excel
+     */
+    public function exportExcel(Request $request)
+    {
+        $query = Student::with('class')->where('status', 'active');
+
+        if ($request->filled('class_id')) {
+            $query->where('class_id', $request->class_id);
+        }
+
+        $students = $query->orderBy('name')->get();
+        
+        return Excel::download(new StudentsExport($students), 'data-siswa-' . now()->format('Y-m-d') . '.xlsx');
     }
 }

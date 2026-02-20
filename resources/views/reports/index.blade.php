@@ -4,13 +4,65 @@
 
 @section('content')
 
-<div class="mb-6">
+<style>
+@media print {
+    /* Hide elements when printing */
+    nav, aside, .no-print, button, a[href*="export"], a[href*="create"] {
+        display: none !important;
+    }
+    
+    /* Adjust layout for print */
+    body {
+        background: white !important;
+    }
+    
+    .bg-white {
+        box-shadow: none !important;
+        border: none !important;
+    }
+    
+    /* Ensure tables fit on page */
+    table {
+        page-break-inside: auto;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    /* Add page header */
+    @page {
+        margin: 2cm;
+    }
+    
+    /* Print title */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+    }
+}
+
+.print-header {
+    display: none;
+}
+</style>
+
+<div class="print-header">
+    <h1 style="margin: 0; font-size: 18px;">LAPORAN ABSENSI SISWA</h1>
+    <p style="margin: 5px 0;">Sistem Absensi Sekolah</p>
+</div>
+
+<div class="no-print mb-6">
     <h1 class="text-2xl font-bold text-gray-900">Rekap Absensi</h1>
     <p class="text-gray-600">Laporan dan statistik absensi siswa</p>
 </div>
 
 <!-- Report Type Selection -->
-<div class="bg-white rounded-lg shadow p-6 mb-6">
+<div class="bg-white rounded-lg shadow p-6 mb-6 no-print">
     <form method="GET" action="{{ route('reports.index') }}">
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -100,6 +152,38 @@
 
     </form>
 </div>
+
+<!-- Export Buttons -->
+@if($reportData)
+<div class="bg-white rounded-lg shadow p-6 mb-6 no-print">
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Export Laporan</h3>
+        <div class="flex gap-2">
+            <a href="{{ route('reports.export.pdf', request()->all()) }}" 
+               class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Export PDF
+            </a>
+            <a href="{{ route('reports.export.excel', request()->all()) }}" 
+               class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Export Excel
+            </a>
+            <button onclick="window.print()" 
+                    class="inline-flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Print
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 
 <!-- Report Content -->
 @if($reportData)

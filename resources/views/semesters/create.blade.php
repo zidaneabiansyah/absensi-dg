@@ -25,7 +25,7 @@
                 name="name" 
                 value="{{ old('name') }}"
                 required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('name') border-red-500 @enderror"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('name') @enderror"
                 placeholder="Contoh: Semester 1, Semester Ganjil"
             >
             @error('name')
@@ -44,7 +44,7 @@
                 name="academic_year" 
                 value="{{ old('academic_year', '2025/2026') }}"
                 required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('academic_year') border-red-500 @enderror"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('academic_year') @enderror"
                 placeholder="2025/2026"
             >
             @error('academic_year')
@@ -63,7 +63,7 @@
                 name="start_date" 
                 value="{{ old('start_date') }}"
                 required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('start_date') border-red-500 @enderror"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('start_date') @enderror"
             >
             @error('start_date')
             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -81,7 +81,7 @@
                 name="end_date" 
                 value="{{ old('end_date') }}"
                 required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('end_date') border-red-500 @enderror"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('end_date') @enderror"
             >
             @error('end_date')
             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -97,7 +97,7 @@
                 id="status" 
                 name="status" 
                 required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('status') border-red-500 @enderror"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8a01] focus:border-transparent @error('status') @enderror"
             >
                 <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Tidak Aktif</option>
                 <option value="active" {{ old('status') === 'active' ? 'selected' : '' }}>Aktif</option>

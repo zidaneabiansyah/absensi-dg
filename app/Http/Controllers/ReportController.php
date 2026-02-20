@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AttendancesExport;
 use App\Models\Attendance;
 use App\Models\ClassModel;
 use App\Models\Student;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
@@ -42,6 +44,88 @@ class ReportController extends Controller
         }
 
         return view('reports.index', compact('type', 'date', 'month', 'classId', 'studentId', 'classes', 'students', 'reportData'));
+    }
+
+    /**
+     * Export to PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $type = $request->get('type', 'daily');
+        $date = $request->get('date', now()->format('Y-m-d'));
+        $month = $request->get('month', now()->format('Y-m'));
+        $classId = $request->get('class_id');
+        $studentId = $request->get('student_id');
+
+        $reportData = null;
+        $filename = 'laporan-absensi-' . now()->format('Y-m-d-His') . '.pdf';
+
+        switch ($type) {
+            case 'daily':
+                $reportData = $this->getDailyReport($date, $classId);
+                $filename = 'laporan-harian-' . $date . '.pdf';
+                break;
+            case 'monthly':
+                $reportData = $this->getMonthlyReport($month, $classId);
+                $filename = 'laporan-bulanan-' . $month . '.pdf';
+                break;
+            case 'class':
+                $reportData = $this->getClassReport($classId, $month);
+                $filename = 'laporan-kelas-' . $month . '.pdf';
+                break;
+            case 'student':
+                $reportData = $this->getStudentReport($studentId, $month);
+                $filename = 'laporan-siswa-' . $month . '.pdf';
+                break;
+        }
+
+        $pdf = Pdf::loadView('reports.pdf', compact('type', 'reportData', 'date', 'month'));
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Export to Excel
+     */
+    public function exportExcel(Request $request)
+    {
+        $type = $request->get('type', 'daily');
+        $date = $request->get('date', now()->format('Y-m-d'));
+        $month = $request->get('month', now()->format('Y-m'));
+        $classId = $request->get('class_id');
+        $studentId = $request->get('student_id');
+
+        $reportData = null;
+        $filename = 'laporan-absensi-' . now()->format('Y-m-d-His') . '.xlsx';
+        $title = 'Laporan Absensi';
+
+        switch ($type) {
+            case 'daily':
+                $reportData = $this->getDailyReport($date, $classId);
+                $filename = 'laporan-harian-' . $date . '.xlsx';
+                $title = 'Laporan Harian - ' . \Carbon\Carbon::parse($date)->format('d F Y');
+                break;
+            case 'monthly':
+                $reportData = $this->getMonthlyReport($month, $classId);
+                $filename = 'laporan-bulanan-' . $month . '.xlsx';
+                $title = 'Laporan Bulanan - ' . \Carbon\Carbon::parse($month)->format('F Y');
+                break;
+            case 'class':
+                $reportData = $this->getClassReport($classId, $month);
+                $filename = 'laporan-kelas-' . $month . '.xlsx';
+                $title = 'Laporan Kelas - ' . \Carbon\Carbon::parse($month)->format('F Y');
+                break;
+            case 'student':
+                $reportData = $this->getStudentReport($studentId, $month);
+                $filename = 'laporan-siswa-' . $month . '.xlsx';
+                $title = 'Laporan Siswa - ' . \Carbon\Carbon::parse($month)->format('F Y');
+                break;
+        }
+
+        if (isset($reportData['attendances'])) {
+            return Excel::download(new AttendancesExport($reportData['attendances'], $title), $filename);
+        }
+
+        return back()->with('error', 'Tidak ada data untuk diekspor');
     }
 
     private function getDailyReport($date, $classId = null)

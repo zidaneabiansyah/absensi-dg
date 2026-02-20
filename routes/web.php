@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
 
     // Student Management
     Route::resource('students', StudentController::class);
+    Route::get('/students/export/excel', [StudentController::class, 'exportExcel'])->name('students.export.excel');
 
     // Semester Management
     Route::resource('semesters', SemesterController::class)->except(['show']);
@@ -45,4 +46,6 @@ Route::middleware('auth')->group(function () {
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
+    Route::get('/reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.export.excel');
 });
