@@ -7,6 +7,7 @@ use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\ClassModel;
 use App\Models\Student;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -44,9 +45,9 @@ class StudentController extends Controller
             ->withQueryString();
 
         // Get all classes for filter
-        $classes = ClassModel::where('status', 'active')
-            ->orderBy('name')
-            ->get();
+        $classes = cache()->remember('classes.active', 86400, fn() => 
+            ClassModel::where('status', 'active')->orderBy('name')->get()
+        );
 
         return view('students.index', compact('students', 'classes'));
     }
@@ -56,9 +57,10 @@ class StudentController extends Controller
      */
     public function create()
     {
-        $classes = ClassModel::where('status', 'active')
-            ->orderBy('name')
-            ->get();
+        // Use cached classes
+        $classes = cache()->remember('classes.active', 86400, fn() => 
+            ClassModel::where('status', 'active')->orderBy('name')->get()
+        );
 
         return view('students.create', compact('classes'));
     }
@@ -69,6 +71,9 @@ class StudentController extends Controller
     public function store(StoreStudentRequest $request)
     {
         Student::create($request->validated());
+
+        // Invalidate cache when student data changes
+        CacheService::clearClassAndStudentCache();
 
         return redirect()
             ->route('students.index')
@@ -92,9 +97,10 @@ class StudentController extends Controller
      */
     public function edit(Student $student)
     {
-        $classes = ClassModel::where('status', 'active')
-            ->orderBy('name')
-            ->get();
+        // Use cached classes
+        $classes = cache()->remember('classes.active', 86400, fn() => 
+            ClassModel::where('status', 'active')->orderBy('name')->get()
+        );
 
         return view('students.edit', compact('student', 'classes'));
     }
@@ -105,6 +111,9 @@ class StudentController extends Controller
     public function update(UpdateStudentRequest $request, Student $student)
     {
         $student->update($request->validated());
+
+        // Invalidate cache when student data changes
+        CacheService::clearClassAndStudentCache();
 
         return redirect()
             ->route('students.index')
@@ -117,6 +126,9 @@ class StudentController extends Controller
     public function destroy(Student $student)
     {
         $student->delete();
+
+        // Invalidate cache when student data changes
+        CacheService::clearClassAndStudentCache();
 
         return redirect()
             ->route('students.index')

@@ -23,8 +23,14 @@ class ReportController extends Controller
         $classId = $request->get('class_id');
         $studentId = $request->get('student_id');
 
-        $classes = ClassModel::where('status', 'active')->orderBy('name')->get();
-        $students = Student::where('status', 'active')->orderBy('name')->get();
+        // Use cache for dropdown data
+        $classes = cache()->remember('classes.active', 86400, fn() => 
+            ClassModel::where('status', 'active')->orderBy('name')->get()
+        );
+        
+        $students = cache()->remember('students.active', 86400, fn() => 
+            Student::where('status', 'active')->orderBy('name')->get()
+        );
 
         $reportData = null;
 
@@ -197,24 +203,34 @@ class ReportController extends Controller
         $startDate = $month . '-01';
         $endDate = date('Y-m-t', strtotime($startDate));
 
-        $studentIds = $class->students->pluck('id');
+        $studentIds = $class->students->pluck('id')->toArray();
 
-        $attendances = Attendance::whereBetween('date', [$startDate, $endDate])
+        $attendanceStats = Attendance::whereBetween('date', [$startDate, $endDate])
             ->whereIn('student_id', $studentIds)
+            ->selectRaw("
+                student_id,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'H' THEN 1 ELSE 0 END) as hadir,
+                SUM(CASE WHEN status = 'I' THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN status = 'S' THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN status = 'A' THEN 1 ELSE 0 END) as alpha,
+                SUM(CASE WHEN status = 'T' THEN 1 ELSE 0 END) as terlambat
+            ")
+            ->groupBy('student_id')
             ->get()
-            ->groupBy('student_id');
+            ->keyBy('student_id');
 
         $studentReports = [];
         foreach ($class->students as $student) {
-            $studentAttendances = $attendances->get($student->id, collect());
+            $stats = $attendanceStats->get($student->id);
             $studentReports[] = [
                 'student' => $student,
-                'hadir' => $studentAttendances->where('status', 'H')->count(),
-                'izin' => $studentAttendances->where('status', 'I')->count(),
-                'sakit' => $studentAttendances->where('status', 'S')->count(),
-                'alpha' => $studentAttendances->where('status', 'A')->count(),
-                'terlambat' => $studentAttendances->where('status', 'T')->count(),
-                'total' => $studentAttendances->count(),
+                'hadir' => (int) ($stats->hadir ?? 0),
+                'izin' => (int) ($stats->izin ?? 0),
+                'sakit' => (int) ($stats->sakit ?? 0),
+                'alpha' => (int) ($stats->alpha ?? 0),
+                'terlambat' => (int) ($stats->terlambat ?? 0),
+                'total' => (int) ($stats->total ?? 0),
             ];
         }
 
@@ -243,16 +259,28 @@ class ReportController extends Controller
             ->orderBy('date')
             ->get();
 
+        $summary = Attendance::where('student_id', $studentId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'H' THEN 1 ELSE 0 END) as hadir,
+                SUM(CASE WHEN status = 'I' THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN status = 'S' THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN status = 'A' THEN 1 ELSE 0 END) as alpha,
+                SUM(CASE WHEN status = 'T' THEN 1 ELSE 0 END) as terlambat
+            ")
+            ->first();
+
         return [
             'student' => $student,
             'attendances' => $attendances,
             'summary' => [
-                'total' => $attendances->count(),
-                'hadir' => $attendances->where('status', 'H')->count(),
-                'izin' => $attendances->where('status', 'I')->count(),
-                'sakit' => $attendances->where('status', 'S')->count(),
-                'alpha' => $attendances->where('status', 'A')->count(),
-                'terlambat' => $attendances->where('status', 'T')->count(),
+                'total' => (int) $summary->total,
+                'hadir' => (int) $summary->hadir,
+                'izin' => (int) $summary->izin,
+                'sakit' => (int) $summary->sakit,
+                'alpha' => (int) $summary->alpha,
+                'terlambat' => (int) $summary->terlambat,
             ],
             'period' => [
                 'start' => $startDate,

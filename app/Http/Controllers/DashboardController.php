@@ -17,19 +17,33 @@ class DashboardController extends Controller
         $today = now()->format('Y-m-d');
 
         // Get statistics
-        $totalClasses = ClassModel::where('status', 'active')->count();
-        $totalStudents = Student::where('status', 'active')->count();
+        $totalClasses = cache()->remember('dashboard.total_classes', 3600, fn() => 
+            ClassModel::where('status', 'active')->count()
+        );
+        
+        $totalStudents = cache()->remember('dashboard.total_students', 3600, fn() => 
+            Student::where('status', 'active')->count()
+        );
         
         // Today's attendance stats
-        $todayAttendances = Attendance::where('date', $today)->get();
-        $hadirCount = $todayAttendances->where('status', 'H')->count();
-        $izinCount = $todayAttendances->where('status', 'I')->count();
-        $sakitCount = $todayAttendances->where('status', 'S')->count();
-        $alphaCount = $todayAttendances->where('status', 'A')->count();
-        $terlambatCount = $todayAttendances->where('status', 'T')->count();
-        
+        $statsResult = Attendance::where('date', $today)
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'H' THEN 1 ELSE 0 END) as hadir,
+                SUM(CASE WHEN status = 'I' THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN status = 'S' THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN status = 'A' THEN 1 ELSE 0 END) as alpha,
+                SUM(CASE WHEN status = 'T' THEN 1 ELSE 0 END) as terlambat
+            ")
+            ->first();
+
+        $hadirCount = (int) $statsResult->hadir;
+        $izinCount = (int) $statsResult->izin;
+        $sakitCount = (int) $statsResult->sakit;
+        $alphaCount = (int) $statsResult->alpha;
+        $terlambatCount = (int) $statsResult->terlambat;
         $tidakHadirCount = $izinCount + $sakitCount + $alphaCount + $terlambatCount;
-        $belumAbsenCount = $totalStudents - $todayAttendances->count();
+        $belumAbsenCount = $totalStudents - ((int) $statsResult->total);
 
         // Recent attendances with student and class info
         $recentAttendances = Attendance::with(['student.class'])

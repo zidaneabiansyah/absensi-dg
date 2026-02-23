@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClassRequest;
 use App\Http\Requests\UpdateClassRequest;
 use App\Models\ClassModel;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 
 class ClassController extends Controller
@@ -65,6 +66,9 @@ class ClassController extends Controller
     {
         ClassModel::create($request->validated());
 
+        // Invalidate cache when class data changes
+        CacheService::clearClassAndStudentCache();
+
         return redirect()
             ->route('classes.index')
             ->with('success', 'Kelas berhasil ditambahkan');
@@ -97,6 +101,9 @@ class ClassController extends Controller
     {
         $class->update($request->validated());
 
+        // Invalidate cache when class data changes
+        CacheService::clearClassAndStudentCache();
+
         return redirect()
             ->route('classes.index')
             ->with('success', 'Kelas berhasil diperbarui');
@@ -115,6 +122,9 @@ class ClassController extends Controller
         }
 
         $class->delete();
+
+        // Invalidate cache when class data changes
+        CacheService::clearClassAndStudentCache();
 
         return redirect()
             ->route('classes.index')

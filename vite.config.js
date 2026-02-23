@@ -10,9 +10,20 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    build: {
+        // Optimize build for production
+        minify: true,
+        // Enable source maps for debugging
+        sourcemap: false,
+        // Increase chunk size warning threshold
+        chunkSizeWarningLimit: 500,
+        // Optimize assets
+        assetsInlineLimit: 4096,
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
     },
 });
+

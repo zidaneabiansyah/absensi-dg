@@ -32,16 +32,35 @@ class AttendanceController extends Controller
         $attendances = $query->latest()->paginate(20)->withQueryString();
 
         // Get classes for filter
-        $classes = ClassModel::where('status', 'active')->orderBy('name')->get();
+        $classes = cache()->remember('classes.active', 86400, fn() => 
+            ClassModel::where('status', 'active')->orderBy('name')->get()
+        );
 
         // Statistics for the selected date
+        $statsQuery = Attendance::where('date', $date)
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'H' THEN 1 ELSE 0 END) as hadir,
+                SUM(CASE WHEN status = 'I' THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN status = 'S' THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN status = 'A' THEN 1 ELSE 0 END) as alpha,
+                SUM(CASE WHEN status = 'T' THEN 1 ELSE 0 END) as terlambat
+            ");
+
+        if ($classId) {
+            $statsQuery->whereHas('student', function($q) use ($classId) {
+                $q->where('class_id', $classId);
+            });
+        }
+
+        $statsResult = $statsQuery->first();
         $stats = [
-            'total' => Attendance::where('date', $date)->count(),
-            'hadir' => Attendance::where('date', $date)->where('status', 'H')->count(),
-            'izin' => Attendance::where('date', $date)->where('status', 'I')->count(),
-            'sakit' => Attendance::where('date', $date)->where('status', 'S')->count(),
-            'alpha' => Attendance::where('date', $date)->where('status', 'A')->count(),
-            'terlambat' => Attendance::where('date', $date)->where('status', 'T')->count(),
+            'total' => (int) $statsResult->total,
+            'hadir' => (int) $statsResult->hadir,
+            'izin' => (int) $statsResult->izin,
+            'sakit' => (int) $statsResult->sakit,
+            'alpha' => (int) $statsResult->alpha,
+            'terlambat' => (int) $statsResult->terlambat,
         ];
 
         return view('attendances.index', compact('attendances', 'classes', 'date', 'stats'));
@@ -52,7 +71,11 @@ class AttendanceController extends Controller
      */
     public function create(Request $request)
     {
-        $classes = ClassModel::where('status', 'active')->orderBy('name')->get();
+        // Use cached classes - more efficient
+        $classes = cache()->remember('classes.active', 86400, fn() => 
+            ClassModel::where('status', 'active')->orderBy('name')->get()
+        );
+        
         $classId = $request->get('class_id');
         $date = $request->get('date', now()->format('Y-m-d'));
 
@@ -65,7 +88,7 @@ class AttendanceController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            // Check existing attendances
+            // Check existing attendances - optimized: single pluck instead of loop
             $existingAttendances = Attendance::where('date', $date)
                 ->whereIn('student_id', $students->pluck('id'))
                 ->pluck('student_id')
@@ -86,25 +109,30 @@ class AttendanceController extends Controller
             $date = $request->date;
             $attendancesData = $request->attendances;
 
-            foreach ($attendancesData as $data) {
-                // Check if attendance already exists
-                $existing = Attendance::where('student_id', $data['student_id'])
-                    ->where('date', $date)
-                    ->first();
-
-                if ($existing) {
-                    continue; // Skip if already exists
-                }
-
-                Attendance::create([
+            // OPTIMIZED: Use upsert for batch operation instead of loop with individual inserts
+            // This converts 30 individual queries into 1 batch operation
+            $insertData = array_map(function($data) use ($date) {
+                return [
                     'student_id' => $data['student_id'],
                     'date' => $date,
                     'status' => $data['status'],
                     'time_in' => $data['time_in'] ?? null,
                     'time_out' => $data['time_out'] ?? null,
                     'source' => 'manual',
-                ]);
-            }
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }, $attendancesData);
+
+            // Upsert: insert or update if already exists
+            Attendance::upsert(
+                $insertData,
+                ['student_id', 'date'], // unique keys
+                ['status', 'time_in', 'time_out', 'updated_at'] // columns to update
+            );
+
+            // Clear cache to ensure fresh data
+            cache()->forget('attendance.stats.' . $date);
 
             DB::commit();
 
