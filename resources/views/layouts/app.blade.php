@@ -125,6 +125,17 @@
                             </a>
                         </li>
 
+                        <!-- Simulator (Dev Only) -->
+                        <li>
+                            <a href="{{ route('simulator') }}" 
+                               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('simulator') ? 'bg-[#ff8a01] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <span class="sidebar-text font-medium text-xs">RFID Simulator</span>
+                            </a>
+                        </li>
+
                     </ul>
                 </nav>
 
