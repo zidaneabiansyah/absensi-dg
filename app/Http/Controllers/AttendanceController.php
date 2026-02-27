@@ -181,4 +181,17 @@ class AttendanceController extends Controller
             ->route('attendances.index', ['date' => $date])
             ->with('success', 'Absensi berhasil dihapus');
     }
+
+    /**
+     * Show attendance simulator
+     */
+    public function simulator()
+    {
+        $students = Student::whereNotNull('rfid_uid')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+            
+        return view('simulator.index', compact('students'));
+    }
 }
