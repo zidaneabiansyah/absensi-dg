@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
 
     // Attendance Management
     Route::resource('attendances', AttendanceController::class)->except(['show']);
+    Route::get('/simulator', [AttendanceController::class, 'simulator'])->name('simulator');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
