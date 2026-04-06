@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RfidController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,10 @@ Route::middleware('auth')->group(function () {
     // Student Management
     Route::resource('students', StudentController::class);
     Route::get('/students/export/excel', [StudentController::class, 'exportExcel'])->name('students.export.excel');
+
+    // RFID Registration
+    Route::get('/rfid/register', [RfidController::class, 'register'])->name('rfid.register');
+    Route::post('/rfid/assign', [RfidController::class, 'assign'])->name('rfid.assign');
 
     // Semester Management
     Route::resource('semesters', SemesterController::class)->except(['show']);
