@@ -1,4 +1,4 @@
-# Sistem Absensi Siswa
+# Sistem Absensi Siswa Berbasis Kartu RFID
 
 Aplikasi web untuk manajemen absensi siswa berbasis Laravel yang menyediakan fitur pencatatan kehadiran, pengelolaan data siswa dan kelas, serta pelaporan absensi secara komprehensif.
 
